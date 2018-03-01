@@ -41,6 +41,23 @@ defmodule ChainTest do
                :balance => List.first(chain)[:content][:balance] + delta
              })
            end
+         ),
+        inconsistent_chain:
+         Enum.reduce(
+           for _n <- 0..50 do
+             Enum.random(-100..100)
+           end,
+           Chain.append(base_chain,
+             %{
+                 :balance => List.first(base_chain)[:content][:balance] + 1000,
+                 :delta => 0
+               }),
+           fn delta, chain ->
+             Chain.append(chain, %{
+               :delta => delta,
+               :balance => List.first(chain)[:content][:balance] + delta
+             })
+           end
          )
      ]}
   end
@@ -64,11 +81,22 @@ defmodule ChainTest do
     assert h[:previous_hash] == Base.encode16(:crypto.hash(:sha256, root_json))
   end
 
-  test "verify valid and consistent chain", context do
+  test "verify valid chain", context do
     assert Chain.verify(context[:valid_chain])
   end
 
+  test "verify valid and consistent chain", context do
+    assert Chain.verify(context[:valid_chain],
+      fn l1, l0 -> l1[:balance] == l0[:balance] + l1[:delta] end)
+  end
+
   test "verify invalid but consistent chain", context do
-    assert not Chain.verify(context[:invalid_chain])
+    assert not Chain.verify(context[:invalid_chain],
+      fn l1, l0 -> l1[:balance] == l0[:balance] + l1[:delta] end)
+  end
+
+  test "verify valid but inconsistent chain", context do
+    assert not Chain.verify(context[:inconsistent_chain],
+      fn l1, l0 -> l1[:balance] == l0[:balance] + l1[:delta] end)
   end
 end

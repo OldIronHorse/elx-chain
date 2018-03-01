@@ -26,16 +26,21 @@ defmodule Chain do
   end
 
   def verify(chain) do
-    verify(List.last(chain)[:hash_type], chain)
+    verify(chain, fn _l1, _l0 -> :true end)
+  end
+  def verify(chain, consistency_fn) do 
+    do_verify(List.last(chain)[:hash_type], consistency_fn, chain)
   end
 
-  def verify(hash_type, [l1, l2]) do
-    l1[:previous_hash] == hash_link(hash_type, l2)
+  defp do_verify(hash_type, consistency_fn, [l1, l2]) do
+    l1[:previous_hash] == hash_link(hash_type, l2) and 
+      consistency_fn.(l1[:content], l2[:content])
   end
 
-  def verify(hash_type, [l1 | [l2 | ls]]) do
-    if l1[:previous_hash] == hash_link(hash_type, l2) do
-      verify([l2 | ls])
+  defp do_verify(hash_type, consistency_fn, [l1 | [l2 | ls]]) do
+    if l1[:previous_hash] == hash_link(hash_type, l2) and
+        consistency_fn.(l1[:content], l2[:content]) do
+      do_verify(hash_type, consistency_fn, [l2 | ls])
     else
       false
     end
