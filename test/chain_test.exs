@@ -3,14 +3,38 @@ defmodule ChainTest do
   doctest Chain
 
   setup _context do
+    base_chain =
+      Enum.reduce(
+        for _n <- 0..100 do
+          Enum.random(-100..100)
+        end,
+        Chain.create(:sha256, %{:balance => 1000}),
+        fn delta, chain ->
+          Chain.append(chain, %{
+            :delta => delta,
+            :balance => List.first(chain)[:content][:balance] + delta
+          })
+        end
+      )
+
     {:ok,
      [
-       valid_chain:
+       valid_chain: base_chain,
+       invalid_chain:
          Enum.reduce(
-           for _n <- 0..100 do
+           for _n <- 0..50 do
              Enum.random(-100..100)
            end,
-           Chain.create(:sha256, %{:balance => 1000}),
+           [
+             %{
+               :previous_hash => "5342532454235",
+               :content => %{
+                 :balance => List.first(base_chain)[:content][:balance],
+                 :delta => 0
+               }
+             }
+             | base_chain
+           ],
            fn delta, chain ->
              Chain.append(chain, %{
                :delta => delta,
@@ -42,5 +66,9 @@ defmodule ChainTest do
 
   test "verify valid and consistent chain", context do
     assert Chain.verify(context[:valid_chain])
+  end
+
+  test "verify invalid but consistent chain", context do
+    assert not Chain.verify(context[:invalid_chain])
   end
 end
