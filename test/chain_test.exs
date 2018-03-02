@@ -42,16 +42,15 @@ defmodule ChainTest do
              })
            end
          ),
-        inconsistent_chain:
+       inconsistent_chain:
          Enum.reduce(
            for _n <- 0..50 do
              Enum.random(-100..100)
            end,
-           Chain.append(base_chain,
-             %{
-                 :balance => List.first(base_chain)[:content][:balance] + 1000,
-                 :delta => 0
-               }),
+           Chain.append(base_chain, %{
+             :balance => List.first(base_chain)[:content][:balance] + 1000,
+             :delta => 0
+           }),
            fn delta, chain ->
              Chain.append(chain, %{
                :delta => delta,
@@ -86,17 +85,20 @@ defmodule ChainTest do
   end
 
   test "verify valid and consistent chain", context do
-    assert Chain.verify(context[:valid_chain],
-      fn l1, l0 -> l1[:balance] == l0[:balance] + l1[:delta] end)
+    assert Chain.verify(context[:valid_chain], fn l1, l0 ->
+             l1[:balance] == l0[:balance] + l1[:delta]
+           end)
   end
 
   test "verify invalid but consistent chain", context do
-    assert not Chain.verify(context[:invalid_chain],
-      fn l1, l0 -> l1[:balance] == l0[:balance] + l1[:delta] end)
+    assert not Chain.verify(context[:invalid_chain], fn l1, l0 ->
+             l1[:balance] == l0[:balance] + l1[:delta]
+           end)
   end
 
   test "verify valid but inconsistent chain", context do
-    assert not Chain.verify(context[:inconsistent_chain],
-      fn l1, l0 -> l1[:balance] == l0[:balance] + l1[:delta] end)
+    assert not Chain.verify(context[:inconsistent_chain], fn l1, l0 ->
+             l1[:balance] == l0[:balance] + l1[:delta]
+           end)
   end
 end
